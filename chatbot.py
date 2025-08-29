@@ -9,10 +9,20 @@ from langchain.chains import ConversationChain
 import streamlit as st
 from dotenv import dotenv_values
 
-# Live environment: Streamlit secrets
-GROQ_API_KEY = st.secrets.get("GROQ_API_KEY")
+import streamlit as st
+from dotenv import dotenv_values
 
-# Local fallback for development
+import streamlit as st
+from dotenv import dotenv_values
+
+# Check if Streamlit secrets exist (live)
+GROQ_API_KEY = None
+try:
+    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+except Exception:
+    pass  # No secrets found, fallback to local .env
+
+# Fallback to local .env
 if not GROQ_API_KEY:
     config = dotenv_values(".env")
     GROQ_API_KEY = config.get("GROQ_API_KEY")
@@ -20,7 +30,6 @@ if not GROQ_API_KEY:
 if not GROQ_API_KEY:
     st.error("❌ Missing GROQ_API_KEY. Add it in Streamlit Secrets (live) or .env file (local).")
     st.stop()
-
 
 # ----------------------------
 # Streamlit Page Setup
@@ -141,45 +150,31 @@ if user_input := st.chat_input("Type your message..."):
 st.session_state.history = st.session_state.history[-20:]
 
 # ----------------------------
+# ----------------------------
 # Bottom Panel: Centered Buttons
 # ----------------------------
 if st.session_state.history:
     chat_txt = "\n".join([f"{m['role'].upper()}: {m['content']}" for m in st.session_state.history])
 
-    col1, col2 = st.columns(2, gap="medium")
-    with col1:
-        st.download_button(
-            label="⬇️ Download Chat (TXT)",
-            data=chat_txt,
-            file_name="chat_history.txt",
-            mime="text/plain"
-        )
+    # 3-column layout: empty-left, buttons-center, empty-right
+    col1, col2, col3 = st.columns([1,2,1])
     with col2:
-        if st.button("📝 Summarize Chat"):
-            with st.spinner("Summarizing chat..."):
-                try:
-                    summary = conv.run(f"Summarize the following conversation:\n{chat_txt}")
-                except Exception as e:
-                    summary = f"⚠️ Error while summarizing: {e}"
-                st.info(summary)
+        # Buttons side by side in center column
+        btn_col1, btn_col2 = st.columns(2, gap="small")
+        with btn_col1:
+            st.download_button(
+                label="⬇️ Download Chat (TXT)",
+                data=chat_txt,
+                file_name="chat_history.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+        with btn_col2:
+            if st.button("📝 Summarize Chat"):
+                with st.spinner("Summarizing chat..."):
+                    try:
+                        summary = conv.run(f"Summarize the following conversation:\n{chat_txt}")
+                    except Exception as e:
+                        summary = f"⚠️ Error while summarizing: {e}"
+                    st.info(summary)
 
-# ----------------------------
-# Custom CSS for polished chat
-# ----------------------------
-st.markdown("""
-<style>
-    .stChatMessage > div:first-child {
-        border-radius: 12px;
-        padding: 8px;
-        margin-bottom: 4px;
-    }
-    .stChatMessage.user div:first-child {
-        background-color: #F0F0F0;
-        text-align: right;
-    }
-    .stChatMessage.assistant div:first-child {
-        background-color: #E6F0FF;
-        text-align: left;
-    }
-</style>
-""", unsafe_allow_html=True)
