@@ -6,15 +6,21 @@ from langchain_groq import ChatGroq
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
 
-# ----------------------------
-# Load .env safely
-# ----------------------------
-config = dotenv_values(".env")
-GROQ_API_KEY = config.get("GROQ_API_KEY")
+import streamlit as st
+from dotenv import dotenv_values
+
+# Live environment: Streamlit secrets
+GROQ_API_KEY = st.secrets.get("GROQ_API_KEY")
+
+# Local fallback for development
+if not GROQ_API_KEY:
+    config = dotenv_values(".env")
+    GROQ_API_KEY = config.get("GROQ_API_KEY")
 
 if not GROQ_API_KEY:
-    st.error("❌ Missing GROQ_API_KEY. Add it in .env file.")
+    st.error("❌ Missing GROQ_API_KEY. Add it in Streamlit Secrets (live) or .env file (local).")
     st.stop()
+
 
 # ----------------------------
 # Streamlit Page Setup
